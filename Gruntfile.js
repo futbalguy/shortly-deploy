@@ -3,6 +3,22 @@ module.exports = function(grunt) {
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
     concat: {
+      // options: {
+      //   separator: ';',
+      // },
+      dist: {
+        src: ['public/client/*.js'],
+        dest: 'public/dist/built.js',
+      },
+    },
+
+    git_deploy: {
+      your_target: {
+        options: {
+          url: 'https://kyle.rokita%40gmail.com@shortlyjk.scm.azurewebsites.net/shortlyJK.git'
+        },
+        src: ''
+      },
     },
 
     mochaTest: {
@@ -21,23 +37,42 @@ module.exports = function(grunt) {
     },
 
     uglify: {
+
+      my_target: {
+        options: {
+          mangle: true
+        },
+        files: {
+          'public/dist/built.min.js': ['public/dist/built.js']
+        }
+      }
     },
 
     jshint: {
       files: [
-        // Add filespec list here
+        '**/*.js'
       ],
       options: {
         force: 'true',
         jshintrc: '.jshintrc',
         ignores: [
           'public/lib/**/*.js',
-          'public/dist/**/*.js'
+          'public/dist/**/*.js',
+          'node_modules/**/*.js'
         ]
       }
     },
 
     cssmin: {
+      target: {
+        files: [{
+          expand: true,
+          cwd: 'public',
+          src: ['*.css', '!*.min.css'],
+          dest: 'public/dist',
+          ext: '.min.css'
+        }]
+      }
     },
 
     watch: {
@@ -72,6 +107,9 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-shell');
   grunt.loadNpmTasks('grunt-nodemon');
 
+  //our modules
+  grunt.loadNpmTasks('grunt-git-deploy');
+
   grunt.registerTask('server-dev', function (target) {
     // Running nodejs in a different process and displaying output on the main console
     var nodemon = grunt.util.spawn({
@@ -90,10 +128,15 @@ module.exports = function(grunt) {
   ////////////////////////////////////////////////////
 
   grunt.registerTask('test', [
+    'jshint',
     'mochaTest'
   ]);
 
   grunt.registerTask('build', [
+    'concat',
+    'uglify',
+    'cssmin',
+    'test'
   ]);
 
   grunt.registerTask('upload', function(n) {
@@ -104,9 +147,14 @@ module.exports = function(grunt) {
     }
   });
 
-  grunt.registerTask('deploy', [
+  grunt.registerTask('deploy', function(n) {
     // add your deploy tasks here
-  ]);
+    if(grunt.option('prod')) {
+      grunt.task.run(['git_deploy']);
+    } else {
+      grunt.task.run(['build','upload']);
+    }
+  });
 
 
 };
